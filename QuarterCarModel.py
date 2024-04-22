@@ -1,4 +1,4 @@
-#region imports
+# region imports
 from scipy.integrate import odeint
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
@@ -8,16 +8,19 @@ from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 
-#these imports are necessary for drawing a matplot lib graph on my GUI
-#no simple widget for this exists in QT Designer, so I have to add the widget in code.
+# these imports are necessary for drawing a matplot lib graph on my GUI
+# no simple widget for this exists in QT Designer, so I have to add the widget in code.
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-#endregion
 
-#region class definitions
-#region specialized graphic items
+
+# endregion
+
+# region class definitions
+# region specialized graphic items
 class MassBlock(qtw.QGraphicsItem):
-    def __init__(self, CenterX, CenterY, width=30, height=10, parent=None, pen=None, brush=None, name='CarBody', mass=10):
+    def __init__(self, CenterX, CenterY, width=30, height=10, parent=None, pen=None, brush=None, name='CarBody',
+                 mass=10):
         super().__init__(parent)
         self.x = CenterX
         self.y = CenterY
@@ -25,13 +28,13 @@ class MassBlock(qtw.QGraphicsItem):
         self.brush = brush
         self.width = width
         self.height = height
-        self.top = self.y - self.height/2
-        self.left = self.x - self.width/2
+        self.top = self.y - self.height / 2
+        self.left = self.x - self.width / 2
         self.rect = qtc.QRectF(self.left, self.top, self.width, self.height)
         self.name = name
         self.mass = mass
         self.transformation = qtg.QTransform()
-        stTT = self.name +"\nx={:0.3f}, y={:0.3f}\nmass = {:0.3f}".format(self.x, self.y, self.mass)
+        stTT = self.name + "\nx={:0.3f}, y={:0.3f}\nmass = {:0.3f}".format(self.x, self.y, self.mass)
         self.setToolTip(stTT)
 
     def boundingRect(self):
@@ -44,38 +47,42 @@ class MassBlock(qtw.QGraphicsItem):
             painter.setPen(self.pen)  # Red color pen
         if self.brush is not None:
             painter.setBrush(self.brush)
-        self.top = -self.height/2
-        self.left = -self.width/2
-        self.rect=qtc.QRectF( self.left, self.top, self.width, self.height)
+        self.top = -self.height / 2
+        self.left = -self.width / 2
+        self.rect = qtc.QRectF(self.left, self.top, self.width, self.height)
         painter.drawRect(self.rect)
         self.transformation.translate(self.x, self.y)
         self.setTransform(self.transformation)
         self.transformation.reset()
-        # brPen=qtg.QPen()
-        # brPen.setWidth(0)
-        # painter.setPen(brPen)
-        # painter.setBrush(qtc.Qt.NoBrush)
-        # painter.drawRect(self.boundingRect())
+        brPen = qtg.QPen()
+        brPen.setWidth(0)
+        painter.setPen(brPen)
+        painter.setBrush(qtc.Qt.NoBrush)
+        painter.drawRect(self.boundingRect())
+
 
 class Wheel(qtw.QGraphicsItem):
-    def __init__(self, CenterX, CenterY, radius=10, parent=None, pen=None, wheelBrush=None, massBrush=None, name='Wheel', mass=10):
+    def __init__(self, CenterX, CenterY, radius=10, parent=None, pen=None, wheelBrush=None, massBrush=None,
+                 name='Wheel', mass=10):
         super().__init__(parent)
         self.x = CenterX
         self.y = CenterY
         self.pen = pen
         self.brush = wheelBrush
         self.radius = radius
-        self.rect = qtc.QRectF(self.x - self.radius, self.y - self.radius, self.radius*2, self.radius*2)
+        self.rect = qtc.QRectF(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
         self.name = name
         self.mass = mass
         self.transformation = qtg.QTransform()
-        stTT = self.name +"\nx={:0.3f}, y={:0.3f}\nmass = {:0.3f}".format(self.x, self.y, self.mass)
+        stTT = self.name + "\nx={:0.3f}, y={:0.3f}\nmass = {:0.3f}".format(self.x, self.y, self.mass)
         self.setToolTip(stTT)
-        self.massBlock = MassBlock(CenterX, CenterY, width=2*radius*0.85, height=radius/3, pen=pen, brush=massBrush, name="Wheel Mass", mass=mass)
+        self.massBlock = MassBlock(CenterX, CenterY, width=2 * radius * 0.85, height=radius / 3, pen=pen,
+                                   brush=massBrush, name="Wheel Mass", mass=mass)
 
     def boundingRect(self):
         bounding_rect = self.transformation.mapRect(self.rect)
         return bounding_rect
+
     def addToScene(self, scene):
         scene.addItem(self)
         scene.addItem(self.massBlock)
@@ -86,26 +93,50 @@ class Wheel(qtw.QGraphicsItem):
             painter.setPen(self.pen)  # Red color pen
         if self.brush is not None:
             painter.setBrush(self.brush)
-        self.rect=qtc.QRectF(-self.radius, -self.radius, self.radius*2, self.radius*2)
+        self.rect = qtc.QRectF(-self.radius, -self.radius, self.radius * 2, self.radius * 2)
         painter.drawEllipse(self.rect)
         self.transformation.translate(self.x, self.y)
         self.setTransform(self.transformation)
         self.transformation.reset()
-        # brPen=qtg.QPen()
-        # brPen.setWidth(0)
-        # painter.setPen(brPen)
-        # painter.setBrush(qtc.Qt.NoBrush)
-        # painter.drawRect(self.boundingRect())
+        brPen = qtg.QPen()
+        brPen.setWidth(0)
+        painter.setPen(brPen)
+        painter.setBrush(qtc.Qt.NoBrush)
+        painter.drawRect(self.boundingRect())
 
-#endregion
 
-#region MVC for quarter car model
+class Spring(qtw.QGraphicsLineItem):
+    def __init__(self, startX, startY, endX, endY, pen=None):
+        super().__init__(startX, startY, endX, endY)
+        self.setFlag(qtw.QGraphicsItem.ItemIsSelectable, True)
+        if pen is not None:
+            self.setPen(pen)
+
+    def addToScene(self, scene):
+        scene.addItem(self)
+
+
+class Dashpot(qtw.QGraphicsLineItem):
+    def __init__(self, startX, startY, endX, endY, pen=None):
+        super().__init__(startX, startY, endX, endY)
+        self.setFlag(qtw.QGraphicsItem.ItemIsSelectable, True)
+        if pen is not None:
+            self.setPen(pen)
+
+    def addToScene(self, scene):
+        scene.addItem(self)
+
+
+# endregion
+
+# region MVC for quarter car model
 class CarModel():
     """
     I re-wrote the quarter car model as an object oriented program
     and used the MVC pattern.  This is the quarter car model.  It just
     stores information about the car and results of the ode calculation.
     """
+
     def __init__(self):
         """
         self.results to hold results of odeint solution
@@ -123,33 +154,39 @@ class CarModel():
         self.yangdeg = 45.0  # ramp angle in degrees.  default is 45
         self.results = None
 
-        #set default values for the properties of the quarter car model
-        self.m1 = #$JES MISSING CODE# # mass of car body in kg
-        self.m2 = #$JES MISSING CODE#  # mass of wheel in kg
-        self.c1 = #$JES MISSING CODE#  # damping coefficient in N*s/m
-        self.k1 = #$JES MISSING CODE#  # spring constant of suspension in N/m
-        self.k2 = #$JES MISSING CODE#  # spring constant of tire in N/m
-        self.v = #$JES MISSING CODE#  # velocity of car in kph
+        # Set default values for the properties of the quarter car model
+        self.m1 = 450  # mass of car body in kg
+        self.m2 = 50  # mass of wheel in kg
+        self.c1 = 100  # damping coefficient in N*s/m
+        self.k1 = 10000  # spring constant of suspension in N/m
+        self.k2 = 20000  # spring constant of tire in N/m
+        self.v = 60  # velocity of car in kph
 
+        # Set minimum and maximum values for k1 and k2 based on static compression values
+        self.mink1 = 3  # If I jack up my car and release the load on the spring, it extends about 3 inches
+        self.maxk1 = 6  # What would be a good value for a soft spring vs. a stiff spring?
+        self.mink2 = 0.75  # Same question for the shock absorber.
+        self.maxk2 = 1.5
 
-        self.mink1 = #$JES MISSING CODE#  #If I jack up my car and release the load on the spring, it extends about 3 inches
-        self.maxk1 = #$JES MISSING CODE#  #What would be a good value for a soft spring vs. a stiff spring?
-        self.mink2 = #$JES MISSING CODE#  #Same question for the shock absorber.
-        self.maxk2 = #$JES MISSING CODE#
-        self.accel =None
-        self.accelMax = #$JES MISSING CODE#
-        self.accelLim = #$JES MISSING CODE#
-        self.SSE = 0.0
+        # Set maximum acceleration experienced by car passengers (e.g., 2.0g)
+        self.accelMax = 2.0  # in g (1g = 9.81 m/s^2)
+
+        # Set acceleration limit for suspension optimization
+        self.accelLim = self.accelMax * 9.81  # Convert maximum acceleration to m/s^2
+
+        self.accel = None  # Placeholder for storing acceleration during optimization
+        self.SSE = 0.0  # Initialize sum of squared errors to 0.0
+
 
 class CarView():
     def __init__(self, args):
         self.input_widgets, self.display_widgets = args
         # unpack widgets with same names as they have on the GUI
         self.le_m1, self.le_v, self.le_k1, self.le_c1, self.le_m2, self.le_k2, self.le_ang, \
-         self.le_tmax, self.chk_IncludeAccel = self.input_widgets
+            self.le_tmax, self.chk_IncludeAccel = self.input_widgets
 
         self.gv_Schematic, self.chk_LogX, self.chk_LogY, self.chk_LogAccel, \
-        self.chk_ShowAccel, self.lbl_MaxMinInfo, self.layout_horizontal_main = self.display_widgets
+            self.chk_ShowAccel, self.lbl_MaxMinInfo, self.layout_horizontal_main = self.display_widgets
 
         # creating a canvas to draw a figure for the car model
         self.figure = Figure(tight_layout=True, frameon=True, facecolor='none')
@@ -171,63 +208,73 @@ class CarView():
         self.le_k2.setText("{:0.2f}".format(model.k2))
         self.le_ang.setText("{:0.2f}".format(model.yangdeg))
         self.le_tmax.setText("{:0.2f}".format(model.tmax))
-        stTmp="k1_min = {:0.2f}, k1_max = {:0.2f}\nk2_min = {:0.2f}, k2_max = {:0.2f}\n".format(model.mink1, model.maxk1, model.mink2, model.maxk2)
-        stTmp+="SSE = {:0.2f}".format(model.SSE)
+        stTmp = "k1_min = {:0.2f}, k1_max = {:0.2f}\nk2_min = {:0.2f}, k2_max = {:0.2f}\n".format(model.mink1,
+                                                                                                  model.maxk1,
+                                                                                                  model.mink2,
+                                                                                                  model.maxk2)
+        stTmp += "SSE = {:0.2f}".format(model.SSE)
         self.lbl_MaxMinInfo.setText(stTmp)
         self.doPlot(model)
 
     def buildScene(self):
-        #create a scene object
+        # create a scene object
         self.scene = qtw.QGraphicsScene()
         self.scene.setObjectName("MyScene")
         self.scene.setSceneRect(-200, -200, 400, 400)  # xLeft, yTop, Width, Height
 
-        #set the scene for the graphics view object
+        # set the scene for the graphics view object
         self.gv_Schematic.setScene(self.scene)
-        #make some pens and brushes for my drawing
+        # make some pens and brushes for my drawing
         self.setupPensAndBrushes()
-        self.Wheel = Wheel(0,50,50, pen=self.penWheel, wheelBrush=self.brushWheel, massBrush=self.brushMass, name = "Wheel")
+        self.Wheel = Wheel(0, 50, 50, pen=self.penWheel, wheelBrush=self.brushWheel, massBrush=self.brushMass,
+                           name="Wheel")
         self.CarBody = MassBlock(0, -70, 100, 30, pen=self.penWheel, brush=self.brushMass, name="Car Body", mass=150)
         self.Wheel.addToScene(self.scene)
         self.scene.addItem(self.CarBody)
-        ##$JES MISSING CODE# #Finish building the scene to look similar to the schematic on the problem assignment
+        # Add more graphical objects to the scene to resemble the schematic
+        self.Spring = Spring(0, -70, 0, -20, pen=self.penSpring)  # Example Spring object
+        self.Dashpot = Dashpot(0, -20, 0, 20, pen=self.penDashpot)  # Example Dashpot object
+
+        # Add the Spring and Dashpot objects to the scene
+        self.Spring.addToScene(self.scene)
+        self.Dashpot.addToScene(self.scene)
 
     def setupPensAndBrushes(self):
         self.penWheel = qtg.QPen(qtg.QColor("orange"))
         self.penWheel.setWidth(1)
-        self.brushWheel = qtg.QBrush(qtg.QColor.fromHsv(35,255,255, 64))
-        self.brushMass = qtg.QBrush(qtg.QColor(200,200,200, 128))
+        self.brushWheel = qtg.QBrush(qtg.QColor.fromHsv(35, 255, 255, 64))
+        self.brushMass = qtg.QBrush(qtg.QColor(200, 200, 200, 128))
 
     def doPlot(self, model=None):
         if model.results is None:
             return
         ax = self.ax
-        ax1=self.ax1
+        ax1 = self.ax1
         # plot result of odeint solver
         QTPlotting = True  # assumes we are plotting onto a QT GUI form
         if ax == None:
             ax = plt.subplot()
-            ax1=ax.twinx()
+            ax1 = ax.twinx()
             QTPlotting = False  # actually, we are just using CLI and showing the plot
         ax.clear()
         ax1.clear()
-        t=model.t
-        ycar = model.results[:,0]
-        ywheel=model.results[:,2]
-        accel=model.accel
+        t = model.t
+        ycar = model.results[:, 0]
+        ywheel = model.results[:, 2]
+        accel = model.accel
 
         if self.chk_LogX.isChecked():
-            ax.set_xlim(0.001,model.tmax)
+            ax.set_xlim(0.001, model.tmax)
             ax.set_xscale('log')
         else:
             ax.set_xlim(0.0, model.tmax)
             ax.set_xscale('linear')
 
         if self.chk_LogY.isChecked():
-            ax.set_ylim(0.0001,max(ycar.max(), ywheel.max()*1.05))
+            ax.set_ylim(0.0001, max(ycar.max(), ywheel.max() * 1.05))
             ax.set_yscale('log')
         else:
-            ax.set_ylim(0.0, max(ycar.max(), ywheel.max()*1.05))
+            ax.set_ylim(0.0, max(ycar.max(), ywheel.max() * 1.05))
             ax.set_yscale('linear')
 
         ax.plot(t, ycar, 'b-', label='Body Position')
@@ -240,7 +287,7 @@ class CarView():
         # add axis labels
         ax.set_ylabel("Vertical Position (m)", fontsize='large' if QTPlotting else 'medium')
         ax.set_xlabel("time (s)", fontsize='large' if QTPlotting else 'medium')
-        ax1.set_ylabel("Y'' (g)", fontsize = 'large' if QTPlotting else 'medium')
+        ax1.set_ylabel("Y'' (g)", fontsize='large' if QTPlotting else 'medium')
         ax.legend()
 
         ax.axvline(x=model.tramp)  # vertical line at tramp
@@ -249,12 +296,13 @@ class CarView():
         ax.tick_params(axis='both', which='both', direction='in', top=True,
                        labelsize='large' if QTPlotting else 'medium')  # format tick marks
         ax1.tick_params(axis='both', which='both', direction='in', right=True,
-                       labelsize='large' if QTPlotting else 'medium')  # format tick marks
+                        labelsize='large' if QTPlotting else 'medium')  # format tick marks
         # show the plot
         if QTPlotting == False:
             plt.show()
         else:
             self.canvas.draw()
+
 
 class CarController():
     def __init__(self, args):
@@ -262,20 +310,20 @@ class CarController():
         This is the controller I am using for the quarter car model.
         """
         self.input_widgets, self.display_widgets = args
-        #unpack widgets with same names as they have on the GUI
+        # unpack widgets with same names as they have on the GUI
         self.le_m1, self.le_v, self.le_k1, self.le_c1, self.le_m2, self.le_k2, self.le_ang, \
-         self.le_tmax, self.chk_IncludeAccel = self.input_widgets
+            self.le_tmax, self.chk_IncludeAccel = self.input_widgets
 
         self.gv_Schematic, self.chk_LogX, self.chk_LogY, self.chk_LogAccel, \
-        self.chk_ShowAccel, self.lbl_MaxMinInfo, self.layout_horizontal_main = self.display_widgets
+            self.chk_ShowAccel, self.lbl_MaxMinInfo, self.layout_horizontal_main = self.display_widgets
 
         self.model = CarModel()
         self.view = CarView(args)
 
-        #self.chk_IncludeAccel=qtw.QCheckBox()
+        # self.chk_IncludeAccel=qtw.QCheckBox()
 
     def ode_system(self, X, t):
-        # define the forcing function equation for the linear ramp
+        # Define the forcing function equation for the linear ramp
         # It takes self.tramp time to climb the ramp, so y position is
         # a linear function of time.
         if t < self.model.tramp:
@@ -283,16 +331,21 @@ class CarController():
         else:
             y = self.model.ymag
 
-        x1 = #$JES MISSING CODE#  # car position in vertical direction
-        x1dot = #$JES MISSING CODE#  # car velocity  in vertical direction
-        x2 = #$JES MISSING CODE#  # wheel position in vertical direction
-        x2dot = #$JES MISSING CODE#  # wheel velocity in vertical direction
+        # Extract state variables
+        x1, x1dot, x2, x2dot = X
 
-        # write the non-trivial equations in vertical direction
-        x1ddot = #$JES MISSING CODE#)
-        x2ddot = #$JES MISSING CODE#
+        # Define system parameters
+        m1 = self.model.m1
+        m2 = self.model.m2
+        k1 = self.model.k1
+        k2 = self.model.k2
+        c1 = self.model.c1
 
-        # return the derivatives of the input state vector
+        # Define the derivatives of the state variables with respect to time
+        x1ddot = (1 / m1) * (k1 * (x2 - x1) + c1 * (x2dot - x1dot)) - 9.81
+        x2ddot = (1 / m2) * (-k1 * (x2 - x1) - c1 * (x2dot - x1dot) + k2 * y)
+
+        # Return the derivatives of the input state vector
         return [x1dot, x1ddot, x2dot, x2ddot]
 
     def calculate(self, doCalc=True):
@@ -300,33 +353,33 @@ class CarController():
         I will first set the basic properties of the car model and then calculate the result
         in another function doCalc.
         """
-        #Step 1.  Read from the widgets
-        self.model.m1 = #$JES MISSING CODE#
-        self.model.m2 = #$JES MISSING CODE#
-        self.model.c1 = #$JES MISSING CODE#
-        self.model.k1 = #$JES MISSING CODE#
-        self.model.k2 = #$JES MISSING CODE#
-        self.model.v = #$JES MISSING CODE#
+        # Step 1. Read from the widgets
+        self.model.m1 = self.widget_m1.value()
+        self.model.m2 = self.widget_m2.value()
+        self.model.c1 = self.widget_c1.value()
+        self.model.k1 = self.widget_k1.value()
+        self.model.k2 = self.widget_k2.value()
+        self.model.v = self.widget_v.value()
 
-        #recalculate min and max k values
-        self.mink1=#$JES MISSING CODE#
-        self.maxk1=#$JES MISSING CODE#
-        self.mink2=#$JES MISSING CODE#
-        self.maxk2=#$JES MISSING CODE#
+        # Recalculate min and max k values
+        self.model.mink1 = 0.5 * self.model.m1 * 9.81 / (self.model.maxk1 * self.model.tramp ** 2)
+        self.model.maxk1 = 0.5 * self.model.m1 * 9.81 / (self.model.mink1 * self.model.tramp ** 2)
+        self.model.mink2 = 0.5 * self.model.m2 * 9.81 / (self.model.maxk2 * self.model.tramp ** 2)
+        self.model.maxk2 = 0.5 * self.model.m2 * 9.81 / (self.model.mink2 * self.model.tramp ** 2)
 
-        ymag=6.0/(12.0*3.3)   #This is the height of the ramp in m
+        ymag = 6.0 / (12.0 * 3.3)  # This is the height of the ramp in m
         if ymag is not None:
             self.model.ymag = ymag
         self.model.yangdeg = float(self.le_ang.text())
         self.model.tmax = float(self.le_tmax.text())
-        if(doCalc):
+        if (doCalc):
             self.doCalc()
         self.SSE((self.model.k1, self.model.c1, self.model.k2), optimizing=False)
         self.view.updateView(self.model)
 
     def setWidgets(self, w):
         self.view.setWidgets(w)
-        self.chk_IncludeAccel=self.view.chk_IncludeAccel
+        self.chk_IncludeAccel = self.view.chk_IncludeAccel
 
     def doCalc(self, doPlot=True, doAccel=True):
         """
@@ -339,7 +392,7 @@ class CarController():
         self.model.angrad = self.model.yangdeg * math.pi / 180.0  # convert angle to radians
         self.model.tramp = self.model.ymag / (math.sin(self.model.angrad) * v)  # calculate time to traverse ramp
 
-        self.model.t=np.linspace(0,self.model.tmax,2000)
+        self.model.t = np.linspace(0, self.model.tmax, 2000)
         ic = [0, 0, 0, 0]
         # run odeint solver
         self.model.results = odeint(self.ode_system, ic, self.model.t)
@@ -352,37 +405,41 @@ class CarController():
         """
         Calculate the acceleration in the vertical direction using the forward difference formula.
         """
-        N=len(self.model.t)
-        self.model.accel=np.zeros(shape=N)
-        vel=self.model.results[:,1]
+        N = len(self.model.t)
+        self.model.accel = np.zeros(shape=N)
+        vel = self.model.results[:, 1]
         for i in range(N):
-            if i==N-1:
-                h = self.model.t[i] - self.model.t[i-1]
-                self.model.accel[i]=(vel[i]-vel[i-1])/(9.81*h)  # backward difference of velocity
+            if i == N - 1:
+                h = self.model.t[i] - self.model.t[i - 1]
+                self.model.accel[i] = (vel[i] - vel[i - 1]) / (9.81 * h)  # backward difference of velocity
             else:
                 h = self.model.t[i + 1] - self.model.t[i]
                 self.model.accel[i] = (vel[i + 1] - vel[i]) / (9.81 * h)  # forward difference of velocity
-            # else:
-            #     self.model.accel[i]=(vel[i+1]-vel[i-1])/(9.81*2.0*h)  # central difference of velocity
-        self.model.accelMax=self.model.accel.max()
+        self.model.accelMax = self.model.accel.max()
         return True
 
     def OptimizeSuspension(self):
         """
-        Step 1:  set parameters based on GUI inputs by calling self.set(doCalc=False)
-        Step 2:  make an initial guess for k1, c1, k2
-        Step 3:  optimize the suspension
+        Step 1: set parameters based on GUI inputs by calling self.set(doCalc=False)
+        Step 2: make an initial guess for k1, c1, k2
+        Step 3: optimize the suspension
         :return:
         """
-        #Step 1:
-        #$JES MISSING CODE HERE$
-        self.calculate(doCalc=False)
-        #Step 2:
-        #JES MISSING CODE HERE$
-        x0= # create a numpy array with initial values for k1, c1, and k2
-        #Step 3:
-        #JES MISSING CODE HERE$
-        answer= #use the Nelder-Mead method to minimize the SSE function (our objective function)
+        # Step 1:
+        self.set(doCalc=False)  # Assuming self.set method sets parameters based on GUI inputs
+
+        # Step 2:
+        # Make an initial guess for k1, c1, k2
+        k1_initial_guess = 10000
+        c1_initial_guess = 100
+        k2_initial_guess = 20000
+        x0 = np.array([k1_initial_guess, c1_initial_guess, k2_initial_guess])
+
+        # Step 3:
+        # Optimize the suspension using the Nelder-Mead method
+        answer = minimize(self.SSE, x0, method='Nelder-Mead')
+
+        # Update the view with the optimized model
         self.view.updateView(self.model)
 
     def SSE(self, vals, optimizing=True):
@@ -392,45 +449,48 @@ class CarController():
         :param optimizing:
         :return:
         """
-        k1, c1, k2=vals  #unpack the new values for k1, c1, k2
-        self.model.k1=k1
-        self.model.c1=c1
-        self.model.k2=k2
-        self.doCalc(doPlot=False)  #solve the odesystem with the new values of k1, c1, k2
-        SSE=0
-        for i in range(len(self.model.results[:,0])):
-            t=self.model.t[i]
-            y=self.model.results[:,0][i]
+        k1, c1, k2 = vals  # unpack the new values for k1, c1, k2
+        self.model.k1 = k1
+        self.model.c1 = c1
+        self.model.k2 = k2
+        self.doCalc(doPlot=False)  # solve the odesystem with the new values of k1, c1, k2
+        SSE = 0
+        for i in range(len(self.model.results[:, 0])):
+            t = self.model.t[i]
+            y = self.model.results[:, 0][i]
             if t < self.model.tramp:
                 ytarget = self.model.ymag * (t / self.model.tramp)
             else:
                 ytarget = self.model.ymag
-            SSE+=(y-ytarget)**2
+            SSE += (y - ytarget) ** 2
 
-        #some penalty functions if the constants are too small
+        # some penalty functions if the constants are too small
         if optimizing:
-            if k1<self.model.mink1 or k1>self.model.maxk1:
-                SSE+=100
-            if c1<10:
-                SSE+=100
-            if k2<self.model.mink2 or k2>self.model.maxk2:
-                SSE+=100
+            if k1 < self.model.mink1 or k1 > self.model.maxk1:
+                SSE += 100
+            if c1 < 10:
+                SSE += 100
+            if k2 < self.model.mink2 or k2 > self.model.maxk2:
+                SSE += 100
 
             # I'm overlaying a gradient in the acceleration limit that scales with distance from a target squared.
-            if self.model.accelMax>self.model.accelLim and self.chk_IncludeAccel.isChecked():
+            if self.model.accelMax > self.model.accelLim and self.chk_IncludeAccel.isChecked():
                 # need to soften suspension
-                SSE+=(self.model.accelMax-self.model.accelLim)**2
-        self.model.SSE=SSE
+                SSE += (self.model.accelMax - self.model.accelLim) ** 2
+        self.model.SSE = SSE
         return SSE
 
     def doPlot(self):
         self.view.doPlot(self.model)
-#endregion
-#endregion
+
+
+# endregion
+# endregion
 
 def main():
     QCM = CarController()
     QCM.doCalc()
+
 
 if __name__ == '__main__':
     main()
