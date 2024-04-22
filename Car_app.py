@@ -14,13 +14,55 @@ from matplotlib.figure import Figure
 
 # endregion
 
+class SchematicView(qtw.QGraphicsView):
+    class Spring(qtw.QGraphicsLineItem):
+        def __init__(self, startX, startY, endX, endY, pen=None):
+            super().__init__(startX, startY, endX, endY)
+            self.setFlag(qtw.QGraphicsItem.ItemIsSelectable, True)
+            if pen is not None:
+                self.setPen(pen)
+
+        def addToScene(self, scene):
+            scene.addItem(self)
+
+    class Dashpot(qtw.QGraphicsLineItem):
+        def __init__(self, startX, startY, endX, endY, pen=None):
+            super().__init__(startX, startY, endX, endY)
+            self.setFlag(qtw.QGraphicsItem.ItemIsSelectable, True)
+            if pen is not None:
+                self.setPen(pen)
+
+        def addToScene(self, scene):
+            scene.addItem(self)
+
+    def __init__(self):
+        super().__init__()
+        self.setScene(qtw.QGraphicsScene())
+
+        # Add spring and dashpot to the scene
+        self.addSpring(50, 50, 100, 100, qtg.QPen(qtc.Qt.black))
+        self.addDashpot(150, 50, 200, 100, qtg.QPen(qtc.Qt.black))
+
+    def addSpring(self, startX, startY, endX, endY, pen=None):
+        spring = self.Spring(startX, startY, endX, endY, pen)
+        spring.addToScene(self.scene())
+
+    def addDashpot(self, startX, startY, endX, endY, pen=None):
+        dashpot = self.Dashpot(startX, startY, endX, endY, pen)
+        dashpot.addToScene(self.scene())
+
+
+# Usage example:
+schematic_view = SchematicView()
+schematic_view.addSpring(50, 50, 100, 100, qtg.QPen(qtc.Qt.black))
+schematic_view.addDashpot(150, 50, 200, 100, qtg.QPen(qtc.Qt.black))
 class MainWindow(qtw.QWidget, Ui_Form):
     def __init__(self):
         """
         Main window constructor.
         """
         super().__init__()
-        # call setupUi feom Ui_Form parent
+        # call setupUi from Ui_Form parent
         self.setupUi(self)
 
         # setup car controller
